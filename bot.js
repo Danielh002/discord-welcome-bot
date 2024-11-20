@@ -7,8 +7,8 @@ const { ensureDirectoryExists, checkIfDirExists, resolvePath, countHumanMembers 
 
 // Configuración del bot
 const TOKEN = process.env.DISCORD_TOKEN;
-const DELAY_IN_MILI_SECOND_AFTER_USER_CONNECTED = process.env.DELAY_IN_MILI_SECOND_AFTER_USER_CONNECTED || 2500;
-const AUDIO_COOLDOWN = process.env.AUDIO_COOLDOWN || 600000;
+const DELAY_IN_MILI_SECONDS_AFTER_USER_CONNECTED = parseInt(process.env.DELAY_IN_MILI_SECOND_AFTER_USER_CONNECTED, 10) || 2500;
+const AUDIO_COOLDOWN_IN_MILI_SECONDS = parseInt(process.env.AUDIO_COOLDOWN, 10) || 600000;
 
 const recentAudioUsers = {};
 
@@ -47,14 +47,14 @@ client.on('voiceStateUpdate', (oldState, newState) => {
   const userId = newState.member.id;
 
   // Si el usuario se conecta a un canal de voz
-  if (newState.channel) {
+  if (!oldState.channel && newState.channel) {
     const channel = newState.channel;
 
     // Verificar que el canal tenga más de un miembro humano
     if (countHumanMembers(channel) > 1) {
       const now = Date.now();
 
-      if (recentAudioUsers[userId] && now - recentAudioUsers[userId] < AUDIO_COOLDOWN) {
+      if (recentAudioUsers[userId] && now - recentAudioUsers[userId] < AUDIO_COOLDOWN_IN_MILI_SECONDS) {
         console.log(`Audio no reproducido para ${newState.member.user.username}, está en cooldown.`);
         return;
       }
@@ -97,7 +97,7 @@ client.on('voiceStateUpdate', (oldState, newState) => {
               connection.destroy();
             });
           });
-        }, DELAY_IN_MILI_SECOND_AFTER_USER_CONNECTED);
+        }, DELAY_IN_MILI_SECONDS_AFTER_USER_CONNECTED);
       }
     }
   }
