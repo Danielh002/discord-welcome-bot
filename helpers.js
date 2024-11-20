@@ -13,9 +13,11 @@ const ensureDirectoryExists = (filePath) => {
     }
 };
 
+const countHumanMembers = (channel) => channel.members.filter(member => !member.user.bot).size;
 
 module.exports = {
   checkIfDirExists,
   resolvePath,
-  ensureDirectoryExists
+  ensureDirectoryExists,
+  countHumanMembers
 }
