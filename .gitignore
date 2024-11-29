@@ -1,0 +1,4 @@
+node_modules/
+audios/
+.env
+package-lock.json
