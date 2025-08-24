@@ -19,8 +19,12 @@
     "type": "audio",
     "value": "./audios/azulito_intro.opus"
   },
-  "230880858418970625":{
+  "230880858418970625": {
     "type": "audio",
     "value": "./audios/gordo_intro.opus"
+  },
+  "285803618169520130": {
+    "type": "text",
+    "value": "Hola Kano bienvenido!"
   }
 }
