@@ -18,5 +18,9 @@
   "1190058015760588800": {
     "type": "audio",
     "value": "./audios/azulito_intro.opus"
+  },
+  "230880858418970625":{
+    "type": "audio",
+    "value": "./audios/gordo_intro.opus"
   }
 }
