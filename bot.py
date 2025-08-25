@@ -85,7 +85,7 @@ async def on_voice_state_update(member, before, after):
     user_id = str(member.id)
     if not before.channel and after.channel:
         channel = after.channel
-        if count_human_members(channel) <= 0:
+        if count_human_members(channel) <= 1:
             print(f"Not enough human members in {channel.name}")
             return
 
