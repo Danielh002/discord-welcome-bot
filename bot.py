@@ -101,7 +101,7 @@ async def play_audio(channel, audio_path):
         vc = await channel.connect()
         await asyncio.sleep(DELAY_AFTER_CONNECT)
         if vc.is_connected():
-            vc.play(FFmpegPCMAudio(audio_path, executable="/opt/homebrew/bin/ffmpeg", options="-b:a 64k"), after=lambda e: bot.loop.create_task(vc.disconnect()))
+            vc.play(FFmpegPCMAudio(audio_path, options="-b:a 64k"), after=lambda e: bot.loop.create_task(vc.disconnect()))
     except discord.errors.ClientException:
         print(f"The bot could not connect to {channel.name}")
     except Exception as e:
