@@ -2,11 +2,13 @@ import os
 import json
 import time
 import discord
+import io
+
 from discord.ext import commands
 from discord import Intents, VoiceChannel, FFmpegPCMAudio
 from pathlib import Path
+from pydub import AudioSegment
 from gtts import gTTS
-import asyncio
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -16,6 +18,7 @@ AUDIO_COOLDOWN = int(os.getenv("AUDIO_COOLDOWN", 600000)) / 1000
 USERS_JSON = "users.json"
 
 recent_audio_users = {}
+pcm_cache = {}
 intents = Intents.default()
 intents.voice_states = True
 intents.guilds = True
@@ -23,6 +26,23 @@ intents.members = True
 intents.message_content = True
 
 bot = commands.Bot(command_prefix="!", intents=intents)
+
+def load_pcm(user_id: str, file_path: str):
+    """
+    Load audio for a user, decode to PCM, and keep in memory.
+    Next plays will be instant.
+    """
+    if user_id not in pcm_cache:
+        # Decode opus/mp3/wav to raw PCM once
+        audio = AudioSegment.from_file(file_path)
+        pcm_io = io.BytesIO()
+        audio.export(pcm_io, format="wav")
+        pcm_io.seek(0)
+
+        # Store as discord.PCMAudio for instant replay
+        pcm_cache[user_id] = discord.PCMAudio(pcm_io)
+
+    return pcm_cache[user_id]
 
 def load_users():
     if os.path.exists(USERS_JSON):
@@ -65,7 +85,7 @@ async def on_voice_state_update(member, before, after):
     user_id = str(member.id)
     if not before.channel and after.channel:
         channel = after.channel
-        if count_human_members(channel) <= 1:
+        if count_human_members(channel) <= 0:
             print(f"Not enough human members in {channel.name}")
             return
 
@@ -94,18 +114,36 @@ async def on_voice_state_update(member, before, after):
                 return
 
         print(f"Playing audio for {member.display_name}: {audio_path}")
-        await play_audio(channel, audio_path)
+        await play_audio(channel, audio_path, user_id)
 
-async def play_audio(channel, audio_path):
+def get_discord_ready_audio(audio_path, user_id=None):
+    if user_id not in pcm_cache:
+        # Load with pydub
+        audio = AudioSegment.from_file(audio_path)
+
+        # Convert to 48kHz stereo 16-bit PCM
+        audio = audio.set_frame_rate(48000).set_channels(2).set_sample_width(2)
+
+        raw_wav = io.BytesIO()
+        audio.export(raw_wav, format="wav")
+        pcm_cache[user_id] = raw_wav.getvalue()
+
+    return discord.PCMAudio(io.BytesIO(pcm_cache[user_id]))
+
+async def play_audio(channel, audio_path, user_id=None):
     try:
         vc = await channel.connect()
-        await asyncio.sleep(DELAY_AFTER_CONNECT)
+
         if vc.is_connected():
-            vc.play(FFmpegPCMAudio(audio_path, options="-b:a 64k"), after=lambda e: bot.loop.create_task(vc.disconnect()))
-    except discord.errors.ClientException:
-        print(f"The bot could not connect to {channel.name}")
+            if user_id:
+                source = get_discord_ready_audio(audio_path, user_id)
+            else:
+                source = discord.FFmpegPCMAudio(audio_path, options="-b:a 64k")
+
+            vc.play(source, after=lambda e: bot.loop.create_task(vc.disconnect()))
+
     except Exception as e:
-        print(f"ERROR: Could not reproduce: {e}")
+        print(f"ERROR: Could not play audio: {e}")
 
 @bot.command()
 @commands.has_permissions(administrator=True)
