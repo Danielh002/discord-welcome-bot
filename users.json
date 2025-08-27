@@ -26,5 +26,9 @@
   "285803618169520130": {
     "type": "text",
     "value": "Hola Kano bienvenido!"
+  },
+  "164940415957467136": {
+    "type": "audio",
+    "value": "./audios/arise.opus"
   }
 }
